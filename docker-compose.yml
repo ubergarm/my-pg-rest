@@ -1,0 +1,19 @@
+api:
+  image: begriffs/postgrest
+  environment:
+    POSTGREST_SCHEMA: public
+    POSTGREST_POOL: 200
+    POSTGREST_JWT_SECRET: my_big_secret
+  ports:
+    - 3000:3000
+  links:
+    - db:pg
+  restart: always
+db:
+  image: yurz/postgres-plpy-fwd
+  environment:
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: foobar
+    POSTGRES_DB: test
+  ports:
+  - 5432:5432
