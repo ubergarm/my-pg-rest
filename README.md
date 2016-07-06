@@ -6,11 +6,11 @@ PostgreSQL and PostgREST to bring them all and in the darkness bind them.
 ## Motivation
 Add _another_ database you say?!? Yes! Here are a few use cases:
 
-1. Migrate a legacy LAMP stack app without breaking existing features by maintaining the old data model while building out a true platform on which those new mobile scalable multitenant apps can stand.
+1. You want a common single endpoint for JSON Web Token authentication, so just to wrap those old user/credential database tables into a single federated view!
 
-2. The new kid keeps raving about RethinkDB, Changefeeds, Reactivity and similar buzzwords. You want to let her build cool new things but access the results in a familiar way from the same place as the rest of your data.
+2. Migrate a legacy LAMP stack app without breaking existing features by maintaining the old data model while building out a true platform on which those new mobile scalable multitenant apps can stand.
 
-3. You want a common single endpoint for JSON Web Token authentication, so just to wrap those old user/credential database tables into a single federated view!
+3. The new kid keeps raving about RethinkDB, Changefeeds, Reactivity and similar buzzwords. You want to let her build cool new things but access the results in a familiar way from the same place as the rest of your data.
 
 4. Finally, an excuse to get work to pay to learn you some Haskell!
 
@@ -188,5 +188,5 @@ This example project isn't complete enough. A few nice to haves which I leave as
 1. Provide full authentication example
 2. Show how to version and map API endpoints per authenticated role
 3. Make my own slim [Alpine](https://www.alpinelinux.org/) based Docker Images
-4. Handle database through [Squitch](http://sqitch.org/)
+4. Handle database through [Sqitch](http://sqitch.org/)
 5. Watch X-Files Season 5 _every episode_.
