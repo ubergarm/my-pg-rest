@@ -41,18 +41,23 @@ Optionally:
 * `ssh` provides secure plumbing from your dev box to your DB server
 
 ## Quick Start
-If your database lives somewhere else, tunnel on in:
+Do some configuration:
 
-    # expose yourself to the world if necessary
-    ssh -fNT -C -L 0.0.0.0:3306:127.0.0.1:3306 myuser@mysqldbhost.com
+1. Edit the `docker-compose.yml` and configure it to tunnel into MySQL server.
+2. Edit the `foreign-federated-auth.sql` and update:
+  * Credentials and target database server.
+  * Make sure you have a valid user on the target databases.
+  * Match up the `project_0` databases to actual names.
+  * Make the inheritable table match your actual table columns.
 
-Edit the `docker-compose.yml` to suit your needs.
+Now start up the stack:
 
+    # start up all the containers
     docker-compose up
-
-Open a `psql` connection with `./psql.sh` assuming default values used the password will be `foobar` of course.
-
-Then open your browser to [http://localhost:3000](http://localhost:3000)
+    # reload the `fedauth` database
+    ./import.sh foreign-federated-auth.sql
+    # command line database access
+    ./psql.sh
 
 ## Basic Commands
 `psql` is the command line postgres tool similar to `mysql`.  Usage examples:
@@ -68,100 +73,44 @@ Then open your browser to [http://localhost:3000](http://localhost:3000)
 PostgreSQL has a two important concepts to grok for this example:
 
 1. A 'Foreign Table' makes external databases available as if they were a local tables or view.
-2. A schema in PostgreSQL is not just another word for database. It is kind of a namespace of which you can have multiple in a single database. This is handy for merging many remote tables into a database and handling permissions through a 'Role' that matches the schema. E.g. an unauthenticated user will by default have access only to the 'public' schema.
-
-## Foreign Table
-An example of how to create a foreign table from a MySQL database:
-
-    -- connect to the 'test' database
-    \c test
-
-    -- load extensions after first time install
-    CREATE EXTENSION mysql_fdw;
-
-    -- create a server object for each server you have
-    -- use actual db address or docker host ip if tunneling
-    CREATE SERVER mysql_server
-        FOREIGN DATA WRAPPER mysql_fdw
-        OPTIONS (host '192.168.1.111', port '3306');
-
-    -- create user mapping for each user you need
-    CREATE USER MAPPING FOR postgres
-        SERVER mysql_server
-        OPTIONS (username 'my_user', password 'my_pass');
-
-    -- create foreign tables for each table you want to federate
-    -- pull in as many or few of the columns as you like
-    CREATE FOREIGN TABLE users_1(
-        id int,
-        username varchar,
-        passhash varchar,
-        email varchar)
-    SERVER mysql_server
-        OPTIONS (dbname 'legacy_client', table_name 'legacy_users');
-
-    -- optionally pull in similar data from a different database
-    CREATE FOREIGN TABLE users_2(
-        id int,
-        username varchar,
-        passhash varchar,
-        email varchar)
-    SERVER mysql_server
-        OPTIONS (dbname 'legacy_client_other', table_name 'legacy_users');
-
-    -- test it out
-    SELECT * from users_1 limit 5;
-
-## Federation
-An example of how to create a federated view across many database tables:
-
-    -- keep going for all the tables you want to merge
-    -- the organization column is optional, your choice
-    -- how to keep the data source information (columns/schemas)
-    CREATE OR REPLACE VIEW "public".users AS(
-        SELECT *,'client' AS organization FROM users_1
-            UNION ALL
-        SELECT *,'client_other' AS organization FROM users_2
-    );
-
-    SELECT * FROM "public".users;
-
-## REST API
-Create a schema containing views of resources to expose over the API:
-
-    -- create version 1 api schema
-    CREATE SCHEMA "1";
-
-    -- expose resources as views attached to a schema
-    CREATE OR REPLACE VIEW "1".users AS
-        SELECT * FROM users;
-
-    -- list all schemas and views
-    SELECT schemaname, viewname FROM pg_catalog.pg_views
-        WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
-        ORDER BY schemaname, viewname;
-
-## Authentication
-Setup some permissions and roles that match your various schemas:
-
-    -- TODO: THIS SECTION IS NOT DONE YET!!!
-
-    -- create anonymous (unauthenticated) role
-    CREATE ROLE anonymous;
-
-    -- allow anonymous access to everything for testing
-    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "1".users TO anonymous;
-
-Now open your browser and try it at [http://localhost:3000/users](http://localhost:3000/users)
+2. A schema in PostgreSQL is not just another word for database. It is kind of a namespace of which you can have multiple in a single database. This is handy for merging many remote tables into a database and handling permissions through a 'role' that matches the schema. E.g. an unauthenticated user will by default have access only to the 'public' schema.
 
 ## CLI Testing
-Test queries on the command line:
+Test queries on the command line using pretty printing or not:
 
-    curl -s http://localhost:3000/users | python -m json.tool
 
-Or of you like `jq`:
+    curl -s -H "Content-Type: application/json" -X POST -d '{"email":"customer@myapp.com","pass":"bigsecret","org":"legacy"}' http://localhost:3000/rpc/login
+    curl -s -H "Content-Type: application/json" -X POST -d '{"email":"customer@myapp.com","pass":"bigsecret","org":"legacy"}' http://localhost:3000/rpc/login| python -m json.tool
+    curl -s -H "Content-Type: application/json" -X POST -d '{"email":"customer@myapp.com","pass":"bigsecret","org":"legacy"}' http://localhost:3000/rpc/login | jq .
 
-    curl -s http://localhost:3000/users?id=lt.8 | jq .
+Paste the resulting token into [JSON Web Token](http://jwt.io) to decode and confirm the `secret` matches.
+
+    {
+        "email": "customer@myapp.com",
+        "org": "legacy",
+        "exp": 1467921516,
+        "role": "authorized",
+        "iat": 1467835116,
+        "custom": 18,
+        "v": 0
+    }
+
+To use the token do access your API with an authorized role:
+
+    curl -X POST -H "Authorization: Bearer PASTETOKENHERE" http://localhost:3000
+
+## Development Staging
+To stage the api _insecurely_ over http directly use a reverse ssh tunnel:
+
+    # local_ip:local_port:remote_ip:remote_port
+    ssh -fNT -C -R 3000:0.0.0.0:3000 myuser@apiserver.com
+
+Exposing port to external sources requires `/etc/ssh/sshd_config` to have a section like:
+
+    Match User mytestuser
+        GatewayPorts yes
+
+Otherwise reverse proxy it from NGINX and an SSL Certificate for `https` etc.
 
 ## Shout-outs
 
@@ -182,11 +131,21 @@ Or of you like `jq`:
 * [Good Example including Authentication](https://www.compose.io/articles/your-sql-schema-is-your-json-api-with-postgrest/)
 * [General Examples](https://begriffs.gitbooks.io/postgrest/content/examples.html)
 
-## TODO
-This example project isn't complete enough. A few nice to haves which I leave as an excercise to the reader.
+## BUGS
 
-1. Provide full authentication example
-2. Show how to version and map API endpoints per authenticated role
-3. Make my own slim [Alpine](https://www.alpinelinux.org/) based Docker Images
-4. Handle database through [Sqitch](http://sqitch.org/)
-5. Watch X-Files Season 5 _every episode_.
+* This stuff if quite untested in its exact form.
+* PostgreSQL container somtimes hangs during autovacuuming sometimes... Ugh...
+* Comment out ssh tunnel server references from `docker-compose.yml` if not working.
+
+You can setup a manual tunnel as well e.g.
+
+    # expose docker host to the world
+    ssh -fNT -C -L 0.0.0.0:3306:127.0.0.1:3306 myuser@mydbserver.com
+    # use your docker host ip address inside any config now
+
+## FEATURES
+It'd be nice to show more examples including a writable federated view as well as:
+
+1. Make slim [Alpine](https://www.alpinelinux.org/) based Docker Images
+2. Handle database through [Sqitch](http://sqitch.org/)
+3. Watch X-Files Season 5 _every episode_.

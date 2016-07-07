@@ -3,7 +3,7 @@ api:
   environment:
     POSTGREST_SCHEMA: public
     POSTGREST_POOL: 200
-    POSTGREST_JWT_SECRET: my_big_secret
+    POSTGREST_JWT_SECRET: secret
   ports:
     - 3000:3000
   links:
@@ -14,6 +14,15 @@ db:
   environment:
     POSTGRES_USER: postgres
     POSTGRES_PASSWORD: foobar
-    POSTGRES_DB: test
+    POSTGRES_DB: fedauth
   ports:
-  - 5432:5432
+    - 5432:5432
+  links:
+    - mysqldb
+mysqldb:
+  image: kingsquare/tunnel
+  volumes:
+    - $SSH_AUTH_SOCK:/ssh-agent
+  ports:
+    - 3306
+  command: "*:3306:127.0.0.1:3306 myuser@mysqldbserver.com"
