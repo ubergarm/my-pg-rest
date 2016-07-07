@@ -95,9 +95,9 @@ Paste the resulting token into [JSON Web Token](http://jwt.io) to decode and con
         "v": 0
     }
 
-To use the token do access your API with an authorized role:
+To use the token do access your API with an authorized role, or send it to to any of your apps using your secret:
 
-    curl -X POST -H "Authorization: Bearer PASTETOKENHERE" http://localhost:3000
+    curl -s -H "Authorization: Bearer INSERTLONGENCODEDKEYHERE :)" http://api.myapiserver.com:3000
 
 ## Development Staging
 To stage the api _insecurely_ over http directly use a reverse ssh tunnel:
