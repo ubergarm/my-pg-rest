@@ -26,6 +26,7 @@ Really though, if you already have a solid data model and a few resource views i
 * [sandman2](https://github.com/jeffknupp/sandman2) - The one liner REST API in a box. Great developers tool for testing and debugging locally.
 * [php-crud-api](https://github.com/mevdschee/php-crud-api) - Drop in one php file and _boom_ a fully Swagger documented API pops out of `curl`.  Also nicely handles embedding resources client or serverside.
 * [Eve](http://python-eve.org/) - Great if you like python and need profesional looking full featured HATEOAS with rate limiting and have time to customize configuration.
+* [postgraphql](https://github.com/postgraphql/postgraphql) - The new hottness.
 
 ## Moving Parts
 The moving parts of this stack include:
@@ -130,6 +131,8 @@ Otherwise reverse proxy it from NGINX and an SSL Certificate for `https` etc.
 * [PostGREST Introduction](http://blog.jonharrington.org/postgrest-introduction/)
 * [Good Example including Authentication](https://www.compose.io/articles/your-sql-schema-is-your-json-api-with-postgrest/)
 * [General Examples](https://begriffs.gitbooks.io/postgrest/content/examples.html)
+* [postgraphql](https://github.com/postgraphql/postgraphql)
+* [membership.db](https://github.com/membership/membership.db/tree/master/postgres)
 
 ## BUGS
 
